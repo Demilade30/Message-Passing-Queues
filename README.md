@@ -5,7 +5,7 @@ Message Passing Queues
 This project consists of two executables, `oss` and `worker`. The `oss` executable launches workers and maintains a ”simulated system clock” in shared memory. The clock consists of two separate integers (one storing seconds, the other nanoseconds) in shared memory, both of which are initialized to zero.
 
 ## Author
-* Name: Divine Akinjiyan (completed on: 02/23/2023)
+* Name: Divine Akinjiyan (completed on: 03/12/2023)
 * Version Control: GitHub
 
 ## Getting Started
@@ -36,6 +36,7 @@ Example:
 *	-n	the number of worker processes
 *	-s	the number of processes that can be running simultaneously and 
 *	-t	the bound of time that a child process will be launched for
+*	-f	the logfile that contains the output of oss.c
 
 ## Note
 Make sure to use the correct syntax when running the executables and makefile.
