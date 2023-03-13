@@ -1,5 +1,5 @@
-# Process-Tables-and-Shared-Memory
-Process tables and shared memory
+# Message-Passing-Queues
+Message Passing Queues
 
 ## Project: Maintaining a ”simulated system clock” in shared memory
 This project consists of two executables, `oss` and `worker`. The `oss` executable launches workers and maintains a ”simulated system clock” in shared memory. The clock consists of two separate integers (one storing seconds, the other nanoseconds) in shared memory, both of which are initialized to zero.
