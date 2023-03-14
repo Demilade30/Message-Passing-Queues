@@ -1,7 +1,7 @@
 # Message-Passing-Queues
 Message Passing Queues
 
-## Project: Maintaining a ”simulated system clock” in shared memory
+## Project: Implementing a simple mesaage passing queue
 This project consists of two executables, `oss` and `worker`. The `oss` executable launches workers and maintains a ”simulated system clock” in shared memory. The clock consists of two separate integers (one storing seconds, the other nanoseconds) in shared memory, both of which are initialized to zero.
 
 ## Author
@@ -29,7 +29,7 @@ To compile the source files into executables, simply run the makefile with the c
 
 Example:
 ```bash
-./oss [-h] [-n] [-s] [-t]
+./oss [-h] [-n] [-s] [-t] [-f]
 ```
 
 *	-h	describes how the project should run and then, terminates
