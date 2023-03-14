@@ -191,6 +191,8 @@ static void startNewWorker(){
 			exit(EXIT_FAILURE);
 		}else{
 			//Parent process
+			long mtype;
+
 			curRun++;
 			userForked++;
 
