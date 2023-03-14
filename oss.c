@@ -182,14 +182,6 @@ static void startNewWorker(){
 			exit(EXIT_FAILURE);
 		}else if(pid == 0){
 			//Child process
-			int randSec = rand() % 100 + 5;
-			int randNsec = rand() % 1000000000 + 1;
-
-			char sec[3];
-			char nsec[11];
-
-			snprintf(sec, sizeof(sec), "%d", randSec);
-			snprintf(nsec, sizeof(nsec), "%d", randNsec);
 			execl("./worker", "./worker", sec, nsec, NULL);
 
 			fprintf(stderr,"%s: failed to execl. ",program);
