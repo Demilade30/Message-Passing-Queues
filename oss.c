@@ -10,6 +10,7 @@
 #include <sys/shm.h>
 
 char* program;
+#define MAX_MSG_LEN 256
 
 //user parameter
 static int proc = 1;
@@ -56,11 +57,12 @@ static void subTime(struct timespec *a, struct timespec *b, struct timespec *c){
   	}
 }
 static void helpMenu(){
-	printf("Usage: ./oss [-h] [-n proc] [-s simul] [-t iter]\n");
+	printf("Usage: ./oss [-h] [-n proc] [-s simul] [-t timelimit] [-f logfile]\n");
         printf("\t\t-h describes how the project should run and then, terminates.\n");
         printf("\t\t-n proc: the number of total children worker processes to launch.\n");
         printf("\t\t-s simul: the number of children processes that can be running simultaneously and.\n");
 	printf("\t\t-t timeLimit: ceilling limit of the time interval that the oss will fork worker process\n");
+	printf("\t\t-f logfile: contains the output of oss.c\n");
 	printf("\tIf any of the parameter above are not defined by user, the default value for them is 1\n");
 }
 static int findIndex(pid_t pid){
