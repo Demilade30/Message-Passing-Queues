@@ -12,6 +12,11 @@
 char* program;
 #define MAX_MSG_LEN 256
 
+typedef struct {
+    long message_type;
+    char message_text[MAX_MSG_LEN];
+} message;
+
 //user parameter
 static int proc = 1;
 static int simul = 1;
@@ -111,6 +116,14 @@ static int createSHM(){
 		pcb[i].startClock.tv_sec = 0;
 		pcb[i].startClock.tv_nsec = 0;
 	}
+
+	//create the message queue
+	int queue_id = msgget(IPC_PRIVATE, 0666 | IPC_CREAT);
+    	if (queue_id == -1) {
+        	perror("Failed to create message queue");
+        	exit(1);
+    	}
+    	printf("Message queue created with ID %d\n", queue_id);
 	return 0;
 }
 static void deallocateSHM(){
@@ -191,8 +204,6 @@ static void startNewWorker(){
 			exit(EXIT_FAILURE);
 		}else{
 			//Parent process
-			long mtype;
-
 			curRun++;
 			userForked++;
 
@@ -246,6 +257,7 @@ static void signalHandler(int sig){
 
 	exit(1);
 }
+
 int main(int argc, char** argv){
 	program = argv[0];
 
@@ -254,7 +266,7 @@ int main(int argc, char** argv){
 	//Register exit function to deallocate memory
 	atexit(deallocateSHM);
 
-	while((opt = getopt(argc, argv, "hn:s:t:")) > 0){
+	while((opt = getopt(argc, argv, "hn:s:t:f:")) > 0){
 		switch (opt){
     			case 'h':
       				helpMenu();
@@ -268,6 +280,9 @@ int main(int argc, char** argv){
 			case 't':
 				timeLimit = atoi(optarg);
                                 break;
+			case 'f':
+				logfile = atoi(optarg);
+				break;
 			case '?':
                                 fprintf(stderr, "%s: ERROR: Unrecognized option: -%c\n",program,optopt);
                                 return -1;
