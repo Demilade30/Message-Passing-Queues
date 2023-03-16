@@ -1,3 +1,4 @@
+#include<stdarg.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<unistd.h>
@@ -24,10 +25,31 @@ static int queue_id = -1;
 static int curRun = 0;
 static int userForked = 0;
 static struct PCB * pcb = NULL;
+static FILE *fptr = NULL;
 
 static struct timespec nextFork = {.tv_sec = 0, .tv_nsec = 0};
 static struct timespec increTime = {.tv_sec = SEC_INCRE, .tv_nsec = NSEC_INCRE};
 static struct timespec lastCheck = {.tv_sec = 0, .tv_nsec = 0};
+
+// print message to the console and write into a file
+static void printWrite(FILE *fptr, char *fmt, ...)
+{
+	char buf[BUFFER_LENGTH];
+	va_list args;
+
+	va_start(args, fmt);
+	vsprintf(buf, fmt, args);
+	va_end(args);
+
+
+	if(fptr != NULL)
+	{
+		fprintf(fptr, buf);
+		fprintf(stdout, buf);
+		fflush(fptr);
+		fflush(stdout);
+	}
+}
 
 static void addTime(struct timespec *a, const struct timespec *b){
 	//function to add time to the clock
@@ -82,6 +104,13 @@ static int findIndex(pid_t pid){
 	return -1;
 }
 static int createSHM(){
+	fptr = fopen(logfile, "w");
+	if(fptr == NULL)
+	{
+		fprintf(stderr, "%s: ERROR: unable to write the output file.\n", program);
+		return -1;
+	}
+
 	shmid = shmget(keySHM, sizeof(struct timespec), IPC_CREAT | IPC_EXCL | S_IRWXU);
 	if(shmid < 0){
 		fprintf(stderr,"%s: failed to get id for shared memory. ",program);
@@ -113,12 +142,11 @@ static int createSHM(){
 	}
 
 	//create the message queue
-	queue_id = msgget(IPC_PRIVATE, 0666 | IPC_CREAT);
+	queue_id = msgget(key_queue, IPC_CREAT | IPC_EXCL | 0666);
     	if (queue_id == -1) {
         	perror("Failed to create message queue");
         	exit(1);
     	}
-    	printf("Message queue created with ID %d\n", queue_id);
 	return 0;
 }
 static void deallocateSHM(){
@@ -145,6 +173,12 @@ static void deallocateSHM(){
 
 	if(pcb != NULL)
 		free(pcb);
+
+	if(fptr != NULL)
+	{
+		fclose(fptr);
+		fptr = NULL;
+	}
 }
 static int checkTimer(){
 	struct timespec t = {.tv_sec = 0, .tv_nsec = 0};
@@ -252,19 +286,19 @@ static void printPCB(){
 	lastCheck.tv_sec = shareClock->tv_sec;
 	lastCheck.tv_nsec = shareClock->tv_nsec;
 
-	printf("OSS PID: %d, SysClockS: %lu, SysclockNano: %lu\n",getpid(), shareClock->tv_sec, shareClock->tv_nsec);
-	printf("Process Table:\n");
-	printf("Entry\t\tOccupied\tPID\t\tStartS\t\tStartN\n");
+	printWrite(fptr, "OSS PID: %d, SysClockS: %lu, SysclockNano: %lu\n",getpid(), shareClock->tv_sec, shareClock->tv_nsec);
+	printWrite(fptr, "Process Table:\n");
+	printWrite(fptr, "Entry\t\tOccupied\tPID\t\tStartS\t\tStartN\n");
 	
 	int i;
 	for(i = 0; i < simul; i++){
-		printf("%d\t\t%d\t\t%d\t\t%lu\t\t%lu\n", i, pcb[i].occupied, pcb[i].pid, pcb[i].startClock.tv_sec, pcb[i].startClock.tv_nsec);
+		printWrite(fptr, "%d\t\t%d\t\t%d\t\t%lu\t\t%lu\n", i, pcb[i].occupied, pcb[i].pid, pcb[i].startClock.tv_sec, pcb[i].startClock.tv_nsec);
 	}
 	
 	return;
 }
 static void signalHandler(int sig){
-	printf("%s: signaled with %d\n",program,sig);
+	printWrite(fptr, "%s: signaled with %d\n",program,sig);
 	int i;
 	for(i = 0; i < simul; i++){
 		if(pcb[i].occupied != 0){
@@ -312,7 +346,7 @@ int main(int argc, char** argv){
 	}
 
 	if(simul > MAX_SIMUL_PROCESSES){
-		printf("The number of simultaneous processes cannot be more than %d!\n",MAX_SIMUL_PROCESSES);
+		printWrite(fptr, "The number of simultaneous processes cannot be more than %d!\n",MAX_SIMUL_PROCESSES);
 		return EXIT_FAILURE;
 	}
 
@@ -342,7 +376,6 @@ int main(int argc, char** argv){
 		printPCB();	
 	}
 	
-
 	return EXIT_SUCCESS;
 
 }

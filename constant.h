@@ -2,6 +2,8 @@
 #define CONSTANT_H
 
 #define MAX_SIMUL_PROCESSES 20
+#define BUFFER_LENGTH 4096
+
 
 #define DEFAULT_SEC_INTERVAL 1
 #define DEFAULT_NSEC_INTERVAL 1000000
@@ -11,6 +13,7 @@
 
 #define EXITTIME 60
 const key_t keySHM = 10032023;
+const key_t key_queue = 12389;
 
 struct PCB{
 	int occupied;

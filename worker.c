@@ -1,3 +1,4 @@
+#include <sys/msg.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include <unistd.h>
@@ -10,6 +11,7 @@ char *program;
 
 static struct timespec * shareClock = NULL;
 static int shmid = -1;
+static int qid = -1;
 
 static struct timespec endTime = {.tv_sec = 0, .tv_nsec = 0};
 static struct timespec lastCheck = {.tv_sec = 0, .tv_nsec = 0};
@@ -65,7 +67,13 @@ static int attachSHM(){
                 perror("Error");
                 return -1;
         }
-		
+
+	qid = msgget(key_queue,0);
+        if(qid == -1){
+                fprintf(stderr,"%s: failed to get id for queue. ",program);
+                perror("Error");
+		return -1;
+        }
 	return 1;
 }
 
@@ -79,13 +87,23 @@ int main(int argc, char** argv){
 	int sec, nsec;
 	program = argv[0];
 
+
 	atexit(detachSHM);
 	
 	if(attachSHM() != 1)
 		return EXIT_FAILURE;
+	
+	message m;
+	if (msgrcv(qid, (void *)&m, MESSAGE_SIZE, getpid(), 0) == -1){
+		fprintf(stderr,"%s: failed to receive message. ", program);
+                perror("Error");
+		exit (EXIT_FAILURE);
+	}
 
-	sec = atoi(argv[1]);
-	nsec = atoi(argv[2]);
+	
+	sec = m.sec;
+	nsec = m.nsec;
+
 	addTime(&endTime, shareClock);
 	endTime.tv_sec = endTime.tv_sec + sec;
 	endTime.tv_nsec = endTime.tv_nsec + nsec;	
