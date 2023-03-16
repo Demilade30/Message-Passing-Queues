@@ -9,13 +9,8 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 
+char *logfile = "logfile.log";
 char* program;
-#define MAX_MSG_LEN 256
-
-typedef struct {
-    long message_type;
-    char message_text[MAX_MSG_LEN];
-} message;
 
 //user parameter
 static int proc = 1;
@@ -25,7 +20,7 @@ static int timeLimit = DEFAULT_SEC_INTERVAL;
 //shareMemory
 static struct timespec * shareClock = NULL;
 static int shmid = -1;
-
+static int queue_id = -1;
 static int curRun = 0;
 static int userForked = 0;
 static struct PCB * pcb = NULL;
@@ -59,7 +54,7 @@ static void subTime(struct timespec *a, struct timespec *b, struct timespec *c){
   	}else{
     		c->tv_sec = b->tv_sec - a->tv_sec;
     		c->tv_nsec = b->tv_nsec - a->tv_nsec;
-  	}
+  }
 }
 static void helpMenu(){
 	printf("Usage: ./oss [-h] [-n proc] [-s simul] [-t timelimit] [-f logfile]\n");
@@ -118,7 +113,7 @@ static int createSHM(){
 	}
 
 	//create the message queue
-	int queue_id = msgget(IPC_PRIVATE, 0666 | IPC_CREAT);
+	queue_id = msgget(IPC_PRIVATE, 0666 | IPC_CREAT);
     	if (queue_id == -1) {
         	perror("Failed to create message queue");
         	exit(1);
@@ -139,6 +134,13 @@ static void deallocateSHM(){
 			fprintf(stderr,"%s: failed to delete shared memory. ",program);
                         perror("Error");
 		}		
+	}
+	
+	if(queue_id != -1){
+		if(msgctl(queue_id, IPC_RMID, NULL) == -1){
+			fprintf(stderr,"%s: failed to delete message queue.",program);
+                        perror("Error");
+		}	
 	}
 
 	if(pcb != NULL)
@@ -197,7 +199,7 @@ static void startNewWorker(){
 			exit(EXIT_FAILURE);
 		}else if(pid == 0){
 			//Child process
-			execl("./worker", "./worker", sec, nsec, NULL);
+			execl("./worker", "./worker", NULL);
 
 			fprintf(stderr,"%s: failed to execl. ",program);
 			perror("Error");
@@ -206,7 +208,22 @@ static void startNewWorker(){
 			//Parent process
 			curRun++;
 			userForked++;
+			
+			int randSec = rand() % 100 + 5;
+			int randNsec = rand() % 1000000000 + 1;	
+			
+			//create a message
+			message m;
+			m.mtype = pid;
+			m.sec = randSec;
+			m.nsec = randNsec;
 
+			if (msgsnd(queue_id, (void *)&m, MESSAGE_SIZE, 0) == -1){
+				fprintf(stderr,"%s: Couldn't send message. ", program);
+				perror("Error");
+    				exit(EXIT_FAILURE);	
+			}  
+		
 			pcb[index].occupied = 1;
 			pcb[index].pid = pid;
 			pcb[index].startClock.tv_sec = shareClock->tv_sec;
@@ -281,7 +298,7 @@ int main(int argc, char** argv){
 				timeLimit = atoi(optarg);
                                 break;
 			case 'f':
-				logfile = atoi(optarg);
+				logfile = optarg;
 				break;
 			case '?':
                                 fprintf(stderr, "%s: ERROR: Unrecognized option: -%c\n",program,optopt);

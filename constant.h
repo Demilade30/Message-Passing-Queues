@@ -19,5 +19,12 @@ struct PCB{
 	struct timespec startClock;
 };
 
+typedef struct {
+	long mtype;
+	int sec;
+	int nsec;
+}message;
+
+#define MESSAGE_SIZE (sizeof(message))
 
 #endif
